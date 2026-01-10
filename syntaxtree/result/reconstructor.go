@@ -1,15 +1,26 @@
 package result
 
-import "github.com/SSripilaipong/muto/syntaxtree/pattern"
+import (
+	"github.com/SSripilaipong/go-common/optional"
+
+	"github.com/SSripilaipong/muto/syntaxtree/pattern"
+)
 
 type Reconstructor struct {
-	extractor pattern.ParamPart
+	extractor optional.Of[pattern.ParamPart]
 	builder   Object
 }
 
 func NewReconstructor(extractor pattern.ParamPart, builder Object) Reconstructor {
 	return Reconstructor{
-		extractor: extractor,
+		extractor: optional.Value(extractor),
+		builder:   builder,
+	}
+}
+
+func NewConstructor(builder Object) Reconstructor {
+	return Reconstructor{
+		extractor: optional.Empty[pattern.ParamPart](),
 		builder:   builder,
 	}
 }
@@ -18,8 +29,12 @@ func (Reconstructor) RuleResultNodeType() NodeType { return NodeTypeReconstructo
 
 func (Reconstructor) ObjectParamType() ParamType { return ParamTypeSingle }
 
-func (r Reconstructor) Extractor() pattern.ParamPart {
+func (r Reconstructor) Extractor() optional.Of[pattern.ParamPart] {
 	return r.extractor
+}
+
+func (r Reconstructor) HasExtractor() bool {
+	return r.extractor.IsNotEmpty()
 }
 
 func (r Reconstructor) Builder() Object {

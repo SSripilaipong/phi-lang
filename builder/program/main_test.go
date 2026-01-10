@@ -252,6 +252,29 @@ main = ((f 1) 2) 3
 		)
 		assert.True(t, expected.Equals(base.UnsafeNodeToObject(execute(program))))
 	})
+
+	t.Run("should mutate constructor with no params", func(t *testing.T) {
+		program := BuildProgramFromString(`main = \[hello "world"]
+`).Value()
+		assert.Equal(t, base.NewNamedOneLayerObject("hello", base.NewString("world")), execute(program))
+	})
+
+	t.Run("should mutate constructor and append extra params at same level", func(t *testing.T) {
+		program := BuildProgramFromString(`main = (\[hello "world"] 123)
+`).Value()
+		expected := base.NewNamedOneLayerObject("hello", base.NewString("world"), base.NewNumberFromString("123"))
+		assert.True(t, expected.Equals(base.UnsafeNodeToObject(execute(program))))
+	})
+
+	t.Run("should work with constructor in match", func(t *testing.T) {
+		// Constructor produces .default and appends the matched value
+		program := BuildProgramFromString(`main = (match
+ \[.default]
+) 123
+`).Value()
+		expected := base.NewOneLayerObject(base.NewTag("default"), base.NewNumberFromString("123"))
+		assert.True(t, expected.Equals(base.UnsafeNodeToObject(execute(program))))
+	})
 }
 
 func mutateOnce(program program2.Program) base.Node {

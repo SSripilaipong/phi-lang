@@ -23,13 +23,22 @@ func newReconstructorBuilderFactory(nodeFactory nodeBuilderFactory) reconstructo
 }
 
 func (f reconstructorBuilderFactory) NewBuilder(recon stResult.Reconstructor) optional.Of[ruleMutator.Builder] { // TODO unit test
-	extractorSample, isValidExtractor := newExtractorWithVariableFactory(recon.Extractor(), extractor.NewVariableFactory()).Return()
+	// Handle constructor case (no extractor)
+	if !recon.HasExtractor() {
+		return optional.Value[ruleMutator.Builder](constructorBuilder{
+			builder: NewObjectBuilderFactory().NewBuilder(recon.Builder()),
+		})
+	}
+
+	// Existing reconstructor logic
+	ext := recon.Extractor().Value()
+	extractorSample, isValidExtractor := newExtractorWithVariableFactory(ext, extractor.NewVariableFactory()).Return()
 	if !isValidExtractor {
 		return optional.Empty[ruleMutator.Builder]()
 	}
 
 	return optional.Value[ruleMutator.Builder](reconstructorBuilder{
-		extractor:       recon.Extractor(),
+		extractor:       ext,
 		builder:         NewObjectBuilderFactory().NewBuilder(recon.Builder()),
 		extractorSample: extractorSample,
 	})
@@ -58,6 +67,23 @@ func (r reconstructorBuilder) VisitClass(f func(base.Class)) {
 
 func (r reconstructorBuilder) DisplayString() string {
 	return fmt.Sprintf("\\%s [%s]", extractor.DisplayString(r.extractorSample), NakedDisplayString(r.builder))
+}
+
+type constructorBuilder struct {
+	builder ruleMutator.Builder
+}
+
+func (c constructorBuilder) Build(param *parameter.Parameter) optional.Of[base.Node] {
+	embeddedBuilder := withVariablesEmbedded(param.VariableMappings(), param.VariadicVarMappings(), c.builder)
+	return optional.Value[base.Node](NewReconstructor(extractor.NewImplicitRightVariadic(nil), embeddedBuilder))
+}
+
+func (c constructorBuilder) VisitClass(f func(base.Class)) {
+	ruleMutator.VisitClass(f, c.builder)
+}
+
+func (c constructorBuilder) DisplayString() string {
+	return fmt.Sprintf("\\[%s]", NakedDisplayString(c.builder))
 }
 
 func newExtractorWithVariableFactory(pattern stPattern.ParamPart, variableFactory ruleExtractor.VariableFactory) optional.Of[extractor.NodeListExtractor] {
@@ -93,7 +119,11 @@ func (s Reconstructor) TopLevelString() string {
 }
 
 func (s Reconstructor) String() string {
-	return fmt.Sprintf("\\%s [%s]", extractor.DisplayString(s.extractor), NakedDisplayString(s.builder))
+	ext := extractor.DisplayString(s.extractor)
+	if len(ext) > 0 {
+		ext += " "
+	}
+	return fmt.Sprintf("\\%s[%s]", ext, NakedDisplayString(s.builder))
 }
 
 var _ base.Node = Reconstructor{}

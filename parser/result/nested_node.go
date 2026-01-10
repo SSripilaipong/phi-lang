@@ -19,6 +19,7 @@ func nestedNode() func([]psBase.Character) tuple.Of2[rslt.Of[stResult.Node], []p
 func nonObjectNestedNode() func([]psBase.Character) tuple.Of2[rslt.Of[stResult.Node], []psBase.Character] {
 	return ps.First(
 		ps.Map(stResult.ToNode, ps.ToParser(structure)),
+		ps.Map(stResult.ToNode, ps.ToParser(constructor())),
 		ps.Map(stResult.ToNode, ps.ToParser(reconstructor())),
 	).Legacy
 }
