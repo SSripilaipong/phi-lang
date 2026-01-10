@@ -31,5 +31,6 @@ func newForeignNormalMutators() []mutator.NamedUnit {
 		notMutator,
 		newTryMutator(),
 		newPortalMutator(),
+		newSelectMutator(),
 	}
 }

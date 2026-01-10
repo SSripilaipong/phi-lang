@@ -81,6 +81,10 @@ func (c *RuleBasedClass) UnlinkRule() {
 	c.mutator = nil
 }
 
+func (c *RuleBasedClass) Rule() Rule {
+	return c.mutator
+}
+
 func NewRuleBasedClass(name string, mutator Rule) *RuleBasedClass {
 	return &RuleBasedClass{name: name, mutator: mutator}
 }

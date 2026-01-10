@@ -7,6 +7,18 @@ import (
 	"github.com/SSripilaipong/muto/core/portal"
 )
 
+type ChannelDirection int
+
+const (
+	ChannelDirectionSend ChannelDirection = iota
+	ChannelDirectionRecv
+)
+
+type ChannelHolder interface {
+	Channel() chan base.Node
+	Direction() ChannelDirection
+}
+
 type LocalChannel struct{}
 
 func NewLocalChannel() LocalChannel {
@@ -48,6 +60,14 @@ func (r senderRule) Normal(obj base.Object) optional.Of[base.Node] {
 	return base.ProcessMutationResultWithParams(optional.Value[base.Node](base.Null()), remaining)
 }
 
+func (r senderRule) Channel() chan base.Node {
+	return r.ch
+}
+
+func (r senderRule) Direction() ChannelDirection {
+	return ChannelDirectionSend
+}
+
 type receiverRule struct {
 	base.NoActiveRule
 	ch chan base.Node
@@ -61,4 +81,14 @@ func (r receiverRule) Normal(obj base.Object) optional.Of[base.Node] {
 	return optional.Value[base.Node](value)
 }
 
+func (r receiverRule) Channel() chan base.Node {
+	return r.ch
+}
+
+func (r receiverRule) Direction() ChannelDirection {
+	return ChannelDirectionRecv
+}
+
 var _ portal.Port = LocalChannel{}
+var _ ChannelHolder = senderRule{}
+var _ ChannelHolder = receiverRule{}
